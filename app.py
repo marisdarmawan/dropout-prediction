@@ -2,31 +2,51 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Load model dan scaler
-model = joblib.load('model.pkl')
-scaler = joblib.load('scaler.pkl')
+# Load the pipeline
+model = joblib.load('model_pipeline.pkl')
 
-# Ambil nama fitur dari model
-feature_names = model.feature_names_in_
+# Load feature names from training (you can save this from training if needed)
+# But for simplicity, infer from model directly
+# You may also manually define it
+feature_names = model.named_steps['feature_engineering'].func.__code__.co_varnames
 
-# Judul aplikasi
 st.title("Student Dropout Prediction")
-st.subheader("Input Data untuk Prediksi")
+st.subheader("Masukkan data mahasiswa:")
 
-# Form input data
+# Hardcode input features for safety and order
+input_features = [
+    'Age_at_enrollment', 'Previous_qualification_grade', 'Admission_grade',
+    'Curricular_units_1st_sem_grade', 'Curricular_units_2nd_sem_grade',
+    'Unemployment_rate', 'Inflation_rate', 'GDP',
+    'Application_mode', 'Application_order', 'Course',
+    'Daytime_evening_attendance', 'Previous_qualification',
+    'Mothers_qualification', 'Fathers_qualification',
+    'Mothers_occupation', 'Fathers_occupation', 'Displaced',
+    'Educational_special_needs', 'Debtor', 'Tuition_fees_up_to_date',
+    'Gender', 'Scholarship_holder', 'International'
+]
+
 input_data = {}
-for feature in feature_names:
-    input_value = st.number_input(f"{feature}", format="%.4f")
-    input_data[feature] = input_value
+for feature in input_features:
+    value = st.text_input(f"{feature}", "")
+    input_data[feature] = value
 
-# Tombol prediksi
-if st.button("Prediksi"):
+if st.button("Predict Dropout"):
     try:
         input_df = pd.DataFrame([input_data])
-        input_scaled = scaler.transform(input_df)
-        prediction = model.predict(input_scaled)[0]
+        # Convert numeric columns (if any)
+        for col in input_df.columns:
+            try:
+                input_df[col] = pd.to_numeric(input_df[col])
+            except ValueError:
+                pass  # keep as string for categorical
 
-        label_mapping = {0: 'Dropout', 1: 'Graduate', 2: 'Enrolled'}
-        st.success(f"Prediksi Status Mahasiswa: **{label_mapping[prediction]}**")
+        # Predict
+        prediction = model.predict(input_df)[0]
+
+        # Output result
+        labels = {0: 'Dropout', 1: 'Graduate', 2: 'Enrolled'}
+        st.success(f"The student is predicted to: **{labels[prediction]}**")
+
     except Exception as e:
         st.error(f"Terjadi kesalahan saat prediksi: {e}")
