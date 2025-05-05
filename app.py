@@ -1,10 +1,10 @@
 import streamlit as st
-import pickle
+import pandas as pd
 import numpy as np
+import joblib
 
-# Load model pipeline
-with open('random_forest_model.pkl', 'rb') as file:
-    model = pickle.load(file)
+# Load model
+model = joblib.load("random_forest_model.pkl")
 
 # Dictionaries for categorical mapping
 marital_status_map = {'Single': 1, 'Married': 2, 'Widower': 3, 'Divorced': 4, 'Facto Union': 5, 'Legally Separated': 6}
