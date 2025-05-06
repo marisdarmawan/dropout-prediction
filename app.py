@@ -197,7 +197,7 @@ with col1:
     marital_status = st.sidebar.selectbox("Marital Status", list(marital_status_map.keys()))
     nacionality_desc = st.sidebar.selectbox("Nationality", list(nationality_map.keys()), index=0) # Default to Portuguese
     gender = st.sidebar.radio("Gender", list(gender_map.keys()))
-    age = st.sidebar.slider("Age at Enrollment", 17, 70, 20) # Adjusted min age slightly based on typical enrollment
+    age = st.sidebar.slider("Age at Enrollment", 17, 70, 20) # Min age based on typical enrollment
     displaced = st.sidebar.radio("Is the student displaced?", list(boolean_map.keys()), index=1) # Default No
     special_needs = st.sidebar.radio("Educational Special Needs?", list(boolean_map.keys()), index=1) # Default No
     international = st.sidebar.radio("International Student?", list(boolean_map.keys()), index=1) # Default No
@@ -206,10 +206,9 @@ with col1:
     application_order = st.sidebar.slider("Application Order (0 = 1st choice)", 0, 9, 0)
     course = st.sidebar.selectbox("Course", list(course_map.keys()))
     attendance = st.sidebar.radio("Class Attendance", list(attendance_map.keys()))
-    admission_grade = st.sidebar.slider("Admission Grade", 0, 200, 140) # Adjusted default slightly
-
+    admission_grade = st.sidebar.slider("Admission Grade", 0, 200, 140) # Default 140
     prev_qualification_desc = st.sidebar.selectbox("Previous Qualification", list(prev_qual_map.keys()), index=0) # Default Secondary
-    prev_grade = st.sidebar.slider("Previous Qualification Grade", 0, 200, 140) # Adjusted default slightly
+    prev_grade = st.sidebar.slider("Previous Qualification Grade", 0, 200, 140) # Default 140
 
 with col2:
     mother_qual_desc = st.sidebar.selectbox("Mother's Qualification", list(parent_qual_map.keys()), index=0)
@@ -221,19 +220,19 @@ with col2:
     fees_up_to_date = st.sidebar.radio("Tuition Fees Up To Date?", list(boolean_map.keys()), index=0) # Default Yes
     scholarship = st.sidebar.radio("Scholarship Holder?", list(boolean_map.keys()), index=1) # Default No
 
-    cred_1st = st.sidebar.slider("1st Sem: Credited Units", 0, 30, 0) # Increased range
-    enr_1st = st.sidebar.slider("1st Sem: Enrolled Units", 0, 30, 6)   # Increased range/default
-    eval_1st = st.sidebar.slider("1st Sem: Evaluated Units", 0, 30, 6) # Increased range/default
-    appr_1st = st.sidebar.slider("1st Sem: Approved Units", 0, 30, 5)  # Increased range/default
-    grade_1st = st.sidebar.slider("1st Sem: Average Grade", 0.0, 20.0, 12.0, step=0.1) # Added based on description
-    no_eval_1st = st.sidebar.slider("1st Sem: Units Without Evaluation", 0, 30, 0) # Increased range
+    cred_1st = st.sidebar.slider("1st Sem: Credited Units", 0, 30, 0) 
+    enr_1st = st.sidebar.slider("1st Sem: Enrolled Units", 0, 30, 6)   
+    eval_1st = st.sidebar.slider("1st Sem: Evaluated Units", 0, 30, 6) 
+    appr_1st = st.sidebar.slider("1st Sem: Approved Units", 0, 30, 5) 
+    grade_1st = st.sidebar.slider("1st Sem: Average Grade", 0.0, 20.0, 12.0, step=0.1) 
+    no_eval_1st = st.sidebar.slider("1st Sem: Units Without Evaluation", 0, 30, 0)
 
-    cred_2nd = st.sidebar.slider("2nd Sem: Credited Units", 0, 30, 0) # Increased range
-    enr_2nd = st.sidebar.slider("2nd Sem: Enrolled Units", 0, 30, 6)   # Increased range/default
-    eval_2nd = st.sidebar.slider("2nd Sem: Evaluated Units", 0, 30, 6) # Increased range/default
-    appr_2nd = st.sidebar.slider("2nd Sem: Approved Units", 0, 30, 5)  # Increased range/default
+    cred_2nd = st.sidebar.slider("2nd Sem: Credited Units", 0, 30, 0) 
+    enr_2nd = st.sidebar.slider("2nd Sem: Enrolled Units", 0, 30, 6)   
+    eval_2nd = st.sidebar.slider("2nd Sem: Evaluated Units", 0, 30, 6) 
+    appr_2nd = st.sidebar.slider("2nd Sem: Approved Units", 0, 30, 5)  
     grade_2nd = st.sidebar.slider("2nd Sem: Average Grade", 0.0, 20.0, 12.0, step=0.1)
-    no_eval_2nd = st.sidebar.slider("2nd Sem: Units Without Evaluation", 0, 30, 0) # Increased range
+    no_eval_2nd = st.sidebar.slider("2nd Sem: Units Without Evaluation", 0, 30, 0) 
 
     unemployment_rate = st.sidebar.slider("Unemployment Rate (%)", 0.0, 20.0, 10.0, step=0.1)
     inflation_rate = st.sidebar.slider("Inflation Rate (%)", -5.0, 10.0, 1.5, step=0.1)
@@ -257,13 +256,13 @@ input_data_list = [
     application_order,
     course_map[course],
     attendance_map[attendance],
-    prev_qualification_code, # Mapped value
+    prev_qualification_code, 
     prev_grade,
-    nationality_code,        # Mapped value
-    mother_qual_code,        # Mapped value
-    father_qual_code,        # Mapped value
-    mother_job_code,         # Mapped value
-    father_job_code,         # Mapped value
+    nationality_code,       
+    mother_qual_code,        
+    father_qual_code,        
+    mother_job_code,         
+    father_job_code,         
     admission_grade,
     boolean_map[displaced],
     boolean_map[special_needs],
@@ -277,17 +276,17 @@ input_data_list = [
     enr_1st,
     eval_1st,
     appr_1st,
-    grade_1st,               # Added grade_1st
-    no_eval_1st,             # Kept from original code
-    cred_2nd,                # Kept from original code
-    enr_2nd,                 # Kept from original code
-    eval_2nd,                # Kept from original code
-    appr_2nd,                # Kept from original code
-    grade_2nd,               # Kept from original code
-    no_eval_2nd,             # Kept from original code
-    unemployment_rate,       # Kept from original code
-    inflation_rate,          # Kept from original code
-    gdp                      # Kept from original code
+    grade_1st,               
+    no_eval_1st,            
+    cred_2nd,               
+    enr_2nd,                 
+    eval_2nd,                
+    appr_2nd,                
+    grade_2nd,               
+    no_eval_2nd,             
+    unemployment_rate,       
+    inflation_rate,          
+    gdp                      
 ]
 
 # Convert to NumPy array with the correct shape (1 row, N columns)
