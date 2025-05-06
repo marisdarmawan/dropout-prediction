@@ -2,20 +2,12 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import sklearn # Ensure scikit-learn is imported, often needed indirectly by joblib/models
+import sklearn 
 
 # Load model
-try:
-    model = joblib.load("random_forest_model.pkl")
-except FileNotFoundError:
-    st.error("Error: Model file 'random_forest_model.pkl' not found. Please ensure the model file is in the same directory.")
-    st.stop()
-except Exception as e:
-    st.error(f"Error loading the model: {e}")
-    st.stop()
+model = joblib.load("random_forest_model.pkl")
 
-# --- Dictionaries for Categorical Mapping (Based on Provided Descriptions) ---
-
+# --- Dictionaries for Categorical Mapping
 marital_status_map = {
     'Single': 1,
     'Married': 2,
@@ -95,10 +87,8 @@ nationality_map = {
     'Turkish': 32, 'Brazilian': 41, 'Romanian': 62, 'Moldova (Republic of)': 100,
     'Mexican': 101, 'Ukrainian': 103, 'Russian': 105, 'Cuban': 108,
     'Colombian': 109
-    # Add other nationalities if present in the dataset
 }
 
-# Simplified qualification maps for parents (can be expanded if needed)
 parent_qual_map = {
     "Secondary Education - 12th Year of Schooling or Eq.": 1,
     "Higher Education - Bachelor's Degree": 2,
@@ -129,7 +119,6 @@ parent_qual_map = {
     "Professional higher technical course": 42,
     "Higher Education - Master (2nd cycle)": 43,
     "Higher Education - Doctorate (3rd cycle)": 44,
-    # Father specific (add if needed, often combined)
     "2nd year complementary high school course": 13,
     "Complementary High School Course": 20,
     "Complementary High School Course - not concluded": 25,
@@ -137,8 +126,6 @@ parent_qual_map = {
     "Supplementary Accounting and Administration": 33
 }
 
-
-# Simplified occupation maps for parents (can be expanded if needed)
 parent_job_map = {
     "Student": 0,
     "Representatives of the Legislative Power and Executive Bodies, Directors, Directors and Executive Managers": 1,
@@ -152,7 +139,7 @@ parent_job_map = {
     "Unskilled Workers": 9,
     "Armed Forces Professions": 10,
     "Other Situation": 90,
-    "(blank)": 99, # Use a specific code if blank is treated differently, e.g., -1 or mapped to Unknown
+    "(blank)": 99, 
     "Health professionals": 122,
     "Teachers": 123,
     "Specialists in information and communication technologies (ICT)": 125,
@@ -172,7 +159,6 @@ parent_job_map = {
     "Unskilled workers in agriculture, animal production, fisheries and forestry": 192,
     "Unskilled workers in extractive industry, construction, manufacturing and transport": 193,
     "Meal preparation assistants": 194,
-    # Father specific (add if needed, often combined)
     "Armed Forces Officers": 101,
     "Armed Forces Sergeants": 102,
     "Other Armed Forces personnel": 103,
@@ -200,17 +186,14 @@ st.set_page_config(layout="wide") # Use wider layout
 st.title("🎓 Student Outcome Prediction")
 st.write("""
 This app predicts whether a student is likely to drop out, stay enrolled, or graduate
-based on their academic and demographic information. Please input the details below.
+based on their academic and demographic information. Please input the student details on the sidebar and click predict.
 """)
 
 st.sidebar.header("Input Student Information")
 
-# --- Input Fields (Ordered as expected by the model) ---
-# Use columns for better layout if needed
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Demographics & Background")
     marital_status = st.sidebar.selectbox("Marital Status", list(marital_status_map.keys()))
     nacionality_desc = st.sidebar.selectbox("Nationality", list(nationality_map.keys()), index=0) # Default to Portuguese
     gender = st.sidebar.radio("Gender", list(gender_map.keys()))
@@ -219,40 +202,32 @@ with col1:
     special_needs = st.sidebar.radio("Educational Special Needs?", list(boolean_map.keys()), index=1) # Default No
     international = st.sidebar.radio("International Student?", list(boolean_map.keys()), index=1) # Default No
 
-    st.subheader("Application Details")
     application_mode = st.sidebar.selectbox("Application Mode", list(application_mode_map.keys()))
     application_order = st.sidebar.slider("Application Order (0 = 1st choice)", 0, 9, 0)
     course = st.sidebar.selectbox("Course", list(course_map.keys()))
     attendance = st.sidebar.radio("Class Attendance", list(attendance_map.keys()))
     admission_grade = st.sidebar.slider("Admission Grade", 0, 200, 140) # Adjusted default slightly
 
-    st.subheader("Previous Education")
     prev_qualification_desc = st.sidebar.selectbox("Previous Qualification", list(prev_qual_map.keys()), index=0) # Default Secondary
     prev_grade = st.sidebar.slider("Previous Qualification Grade", 0, 200, 140) # Adjusted default slightly
 
 with col2:
-    st.subheader("Parental Information")
     mother_qual_desc = st.sidebar.selectbox("Mother's Qualification", list(parent_qual_map.keys()), index=0)
     father_qual_desc = st.sidebar.selectbox("Father's Qualification", list(parent_qual_map.keys()), index=0)
     mother_job_desc = st.sidebar.selectbox("Mother's Occupation", list(parent_job_map.keys()), index=11) # Default to (blank) or common category
     father_job_desc = st.sidebar.selectbox("Father's Occupation", list(parent_job_map.keys()), index=11) # Default to (blank) or common category
 
-    st.subheader("Financial Status")
     debtor = st.sidebar.radio("Is the student a debtor?", list(boolean_map.keys()), index=1) # Default No
     fees_up_to_date = st.sidebar.radio("Tuition Fees Up To Date?", list(boolean_map.keys()), index=0) # Default Yes
     scholarship = st.sidebar.radio("Scholarship Holder?", list(boolean_map.keys()), index=1) # Default No
 
-    st.subheader("Academic Performance (1st Semester)")
     cred_1st = st.sidebar.slider("1st Sem: Credited Units", 0, 30, 0) # Increased range
     enr_1st = st.sidebar.slider("1st Sem: Enrolled Units", 0, 30, 6)   # Increased range/default
     eval_1st = st.sidebar.slider("1st Sem: Evaluated Units", 0, 30, 6) # Increased range/default
     appr_1st = st.sidebar.slider("1st Sem: Approved Units", 0, 30, 5)  # Increased range/default
     grade_1st = st.sidebar.slider("1st Sem: Average Grade", 0.0, 20.0, 12.0, step=0.1) # Added based on description
-    # Note: 'without evaluation' was in original code but not description table - keeping it for model compatibility
     no_eval_1st = st.sidebar.slider("1st Sem: Units Without Evaluation", 0, 30, 0) # Increased range
 
-    st.subheader("Academic Performance (2nd Semester)")
-    # Note: 2nd Sem fields were in original code but not description table - keeping them for model compatibility
     cred_2nd = st.sidebar.slider("2nd Sem: Credited Units", 0, 30, 0) # Increased range
     enr_2nd = st.sidebar.slider("2nd Sem: Enrolled Units", 0, 30, 6)   # Increased range/default
     eval_2nd = st.sidebar.slider("2nd Sem: Evaluated Units", 0, 30, 6) # Increased range/default
@@ -260,8 +235,6 @@ with col2:
     grade_2nd = st.sidebar.slider("2nd Sem: Average Grade", 0.0, 20.0, 12.0, step=0.1)
     no_eval_2nd = st.sidebar.slider("2nd Sem: Units Without Evaluation", 0, 30, 0) # Increased range
 
-    st.subheader("Economic Context (Optional)")
-    # Note: Economic fields were in original code but not description table - keeping them for model compatibility
     unemployment_rate = st.sidebar.slider("Unemployment Rate (%)", 0.0, 20.0, 10.0, step=0.1)
     inflation_rate = st.sidebar.slider("Inflation Rate (%)", -5.0, 10.0, 1.5, step=0.1)
     gdp = st.sidebar.slider("GDP Growth Rate (%)", -10.0, 10.0, 0.5, step=0.1)
@@ -278,9 +251,6 @@ mother_job_code = parent_job_map[mother_job_desc]
 father_job_code = parent_job_map[father_job_desc]
 
 
-# Arrange inputs in the correct order expected by the model
-# IMPORTANT: Verify this order matches exactly how the model was trained!
-# This order is based on the original script structure and added 'grade_1st'.
 input_data_list = [
     marital_status_map[marital_status],
     application_mode_map[application_mode],
@@ -327,11 +297,9 @@ input_data = np.array([input_data_list])
 # Mapping prediction output to label
 prediction_map = {
     0: "❌ The student is predicted to **DROP OUT**.",
-    1: "📚 The student is predicted to **STAY ENROLLED**.", # Check if 'Enrolled' or 'Graduate' is 1
-    2: "🎓 The student is predicted to **GRADUATE**."      # Check if 'Enrolled' or 'Graduate' is 2
+    1: "📚 The student is predicted to **STAY ENROLLED**.", 
+    2: "🎓 The student is predicted to **GRADUATE**."    
 }
-# IMPORTANT: Verify the numeric codes (0, 1, 2) match the actual labels ('Dropout', 'Enrolled', 'Graduate') used during model training. Adjust prediction_map if necessary.
-
 
 st.divider() # Add a visual separator
 
@@ -356,10 +324,6 @@ if st.button("Predict Student Outcome", type="primary", use_container_width=True
         })
         st.dataframe(proba_df.style.format({'Probability': "{:.2%}"})) # Format as percentage
 
-        # Optional: Display input data for verification
-        # st.subheader("Input Data Summary")
-        # st.json(dict(zip(feature_names_in_order, input_data_list))) # Requires defining feature_names_in_order
-
     except AttributeError:
          st.error("The loaded model doesn't seem to have a 'predict_proba' method. Displaying prediction only.")
          prediction = model.predict(input_data_float)[0]
@@ -374,4 +338,3 @@ if st.button("Predict Student Outcome", type="primary", use_container_width=True
         st.error(f"Input data shape: {input_data.shape}")
 
 st.sidebar.markdown("---")
-st.sidebar.info("Model: Random Forest Classifier")
