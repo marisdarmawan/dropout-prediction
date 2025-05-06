@@ -2,91 +2,298 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+import sklearn # Ensure scikit-learn is imported, often needed indirectly by joblib/models
 
 # Load model
-model = joblib.load("random_forest_model.pkl")
+try:
+    model = joblib.load("random_forest_model.pkl")
+except FileNotFoundError:
+    st.error("Error: Model file 'random_forest_model.pkl' not found. Please ensure the model file is in the same directory.")
+    st.stop()
+except Exception as e:
+    st.error(f"Error loading the model: {e}")
+    st.stop()
 
-# Dictionaries for categorical mapping
-marital_status_map = {'Single': 1, 'Married': 2, 'Widower': 3, 'Divorced': 4, 'Facto Union': 5, 'Legally Separated': 6}
+# --- Dictionaries for Categorical Mapping (Based on Provided Descriptions) ---
+
+marital_status_map = {
+    'Single': 1,
+    'Married': 2,
+    'Widower': 3,
+    'Divorced': 4,
+    'Facto Union': 5,
+    'Legally Separated': 6
+}
+
 application_mode_map = {
-    '1st phase - general contingent': 1, 'Ordinance No. 612/93': 2,
-    '1st phase - special contingent (Azores Island)': 5, 'Holders of other higher courses': 7,
-    'Ordinance No. 854-B/99': 10, 'International student (bachelor)': 15,
-    '1st phase - special contingent (Madeira Island)': 16, '2nd phase - general contingent': 17,
-    '3rd phase - general contingent': 18, 'Over 23 years old': 39,
-    'Transfer': 42, 'Change of course': 43, 'Change of institution/course': 51,
+    '1st phase - general contingent': 1,
+    'Ordinance No. 612/93': 2,
+    '1st phase - special contingent (Azores Island)': 5,
+    'Holders of other higher courses': 7,
+    'Ordinance No. 854-B/99': 10,
+    'International student (bachelor)': 15,
+    '1st phase - special contingent (Madeira Island)': 16,
+    '2nd phase - general contingent': 17,
+    '3rd phase - general contingent': 18,
+    'Ordinance No. 533-A/99, item b2) (Different Plan)': 26,
+    'Ordinance No. 533-A/99, item b3 (Other Institution)': 27,
+    'Over 23 years old': 39,
+    'Transfer': 42,
+    'Change of course': 43,
+    'Technological specialization diploma holders': 44,
+    'Change of institution/course': 51,
+    'Short cycle diploma holders': 53,
+    'Change of institution/course (International)': 57
 }
+
 course_map = {
-    'Informatics Engineering': 9119, 'Nursing': 9500, 'Management': 9147, 'Tourism': 9254,
-    'Communication Design': 9070, 'Social Service': 9238, 'Veterinary Nursing': 9085,
-    'Biofuel Production Technologies': 33, 'Oral Hygiene': 9556, 'Basic Education': 9853,
-    'Advertising and Marketing Management': 9670, 'Animation and Multimedia Design': 171,
+    'Biofuel Production Technologies': 33,
+    'Animation and Multimedia Design': 171,
+    'Social Service (evening attendance)': 8014,
+    'Agronomy': 9003,
+    'Communication Design': 9070,
+    'Veterinary Nursing': 9085,
+    'Informatics Engineering': 9119,
+    'Equinculture': 9130,
+    'Management': 9147,
+    'Social Service': 9238,
+    'Tourism': 9254,
+    'Nursing': 9500,
+    'Oral Hygiene': 9556,
+    'Advertising and Marketing Management': 9670,
+    'Journalism and Communication': 9773,
+    'Basic Education': 9853,
+    'Management (evening attendance)': 9991
 }
+
 attendance_map = {'Daytime': 1, 'Evening': 0}
+
+prev_qual_map = {
+    'Secondary education': 1,
+    "Higher education - bachelor's degree": 2,
+    'Higher education - degree': 3,
+    "Higher education - master's": 4,
+    'Higher education - doctorate': 5,
+    'Frequency of higher education': 6,
+    '12th year of schooling - not completed': 9,
+    '11th year of schooling - not completed': 10,
+    'Other - 11th year of schooling': 12,
+    '10th year of schooling': 14,
+    '10th year of schooling - not completed': 15,
+    'Basic education 3rd cycle (9th/10th/11th year) or equiv.': 19,
+    'Basic education 2nd cycle (6th/7th/8th year) or equiv.': 38,
+    'Technological specialization course': 39,
+    'Higher education - degree (1st cycle)': 40,
+    'Professional higher technical course': 42,
+    'Higher education - master (2nd cycle)': 43
+}
+
+nationality_map = {
+    'Portuguese': 1, 'German': 2, 'Spanish': 6, 'Italian': 11,
+    'Dutch': 13, 'English': 14, 'Lithuanian': 17, 'Angolan': 21,
+    'Cape Verdean': 22, 'Guinean': 24, 'Mozambican': 25, 'Santomean': 26,
+    'Turkish': 32, 'Brazilian': 41, 'Romanian': 62, 'Moldova (Republic of)': 100,
+    'Mexican': 101, 'Ukrainian': 103, 'Russian': 105, 'Cuban': 108,
+    'Colombian': 109
+    # Add other nationalities if present in the dataset
+}
+
+# Simplified qualification maps for parents (can be expanded if needed)
+parent_qual_map = {
+    "Secondary Education - 12th Year of Schooling or Eq.": 1,
+    "Higher Education - Bachelor's Degree": 2,
+    "Higher Education - Degree": 3,
+    "Higher Education - Master's": 4,
+    "Higher Education - Doctorate": 5,
+    "Frequency of Higher Education": 6,
+    "12th Year of Schooling - Not Completed": 9,
+    "11th Year of Schooling - Not Completed": 10,
+    "7th Year (Old)": 11,
+    "Other - 11th Year of Schooling": 12,
+    "10th Year of Schooling": 14,
+    "General commerce course": 18,
+    "Basic Education 3rd Cycle (9th/10th/11th Year) or Equiv.": 19,
+    "Technical-professional course": 22,
+    "7th year of schooling": 26,
+    "2nd cycle of the general high school course": 27,
+    "9th Year of Schooling - Not Completed": 29,
+    "8th year of schooling": 30,
+    "Unknown": 34,
+    "Can't read or write": 35,
+    "Can read without having a 4th year of schooling": 36,
+    "Basic education 1st cycle (4th/5th year) or equiv.": 37,
+    "Basic Education 2nd Cycle (6th/7th/8th Year) or Equiv.": 38,
+    "Technological specialization course": 39,
+    "Higher education - degree (1st cycle)": 40,
+    "Specialized higher studies course": 41,
+    "Professional higher technical course": 42,
+    "Higher Education - Master (2nd cycle)": 43,
+    "Higher Education - Doctorate (3rd cycle)": 44,
+    # Father specific (add if needed, often combined)
+    "2nd year complementary high school course": 13,
+    "Complementary High School Course": 20,
+    "Complementary High School Course - not concluded": 25,
+    "General Course of Administration and Commerce": 31,
+    "Supplementary Accounting and Administration": 33
+}
+
+
+# Simplified occupation maps for parents (can be expanded if needed)
+parent_job_map = {
+    "Student": 0,
+    "Representatives of the Legislative Power and Executive Bodies, Directors, Directors and Executive Managers": 1,
+    "Specialists in Intellectual and Scientific Activities": 2,
+    "Intermediate Level Technicians and Professions": 3,
+    "Administrative staff": 4,
+    "Personal Services, Security and Safety Workers and Sellers": 5,
+    "Farmers and Skilled Workers in Agriculture, Fisheries and Forestry": 6,
+    "Skilled Workers in Industry, Construction and Craftsmen": 7,
+    "Installation and Machine Operators and Assembly Workers": 8,
+    "Unskilled Workers": 9,
+    "Armed Forces Professions": 10,
+    "Other Situation": 90,
+    "(blank)": 99, # Use a specific code if blank is treated differently, e.g., -1 or mapped to Unknown
+    "Health professionals": 122,
+    "Teachers": 123,
+    "Specialists in information and communication technologies (ICT)": 125,
+    "Intermediate level science and engineering technicians and professions": 131,
+    "Technicians and professionals, of intermediate level of health": 132,
+    "Intermediate level technicians from legal, social, sports, cultural and similar services": 134,
+    "Office workers, secretaries in general and data processing operators": 141,
+    "Data, accounting, statistical, financial services and registry-related operators": 143,
+    "Other administrative support staff": 144,
+    "Personal service workers": 151,
+    "Sellers": 152,
+    "Personal care workers and the like": 153,
+    "Skilled construction workers and the like, except electricians": 171,
+    "Skilled workers in printing, precision instrument manufacturing, jewelers, artisans and the like": 173,
+    "Workers in food processing, woodworking, clothing and other industries and crafts": 175,
+    "Cleaning workers": 191,
+    "Unskilled workers in agriculture, animal production, fisheries and forestry": 192,
+    "Unskilled workers in extractive industry, construction, manufacturing and transport": 193,
+    "Meal preparation assistants": 194,
+    # Father specific (add if needed, often combined)
+    "Armed Forces Officers": 101,
+    "Armed Forces Sergeants": 102,
+    "Other Armed Forces personnel": 103,
+    "Directors of administrative and commercial services": 112,
+    "Hotel, catering, trade and other services directors": 114,
+    "Specialists in the physical sciences, mathematics, engineering and related techniques": 121,
+    "Specialists in finance, accounting, administrative organization, public and commercial relations": 124,
+    "Information and communication technology technicians": 135,
+    "Protection and security services personnel": 154,
+    "Market-oriented farmers and skilled agricultural and animal production workers": 161,
+    "Farmers, livestock keepers, fishermen, hunters and gatherers, subsistence": 163,
+    "Skilled workers in metallurgy, metalworking and similar": 172,
+    "Skilled workers in electricity and electronics": 174,
+    "Fixed plant and machine operators": 181,
+    "Assembly workers": 182,
+    "Vehicle drivers and mobile equipment operators": 183,
+    "Street vendors (except food) and street service providers": 195
+}
+
 boolean_map = {'Yes': 1, 'No': 0}
 gender_map = {'Male': 1, 'Female': 0}
 
-st.title("🎓 Student Dropout Prediction")
+# --- Streamlit App Layout ---
+st.set_page_config(layout="wide") # Use wider layout
+st.title("🎓 Student Outcome Prediction")
+st.write("""
+This app predicts whether a student is likely to drop out, stay enrolled, or graduate
+based on their academic and demographic information. Please input the details below.
+""")
+
 st.sidebar.header("Input Student Information")
 
-# Input fields (ordered as required)
-marital_status = st.sidebar.selectbox("Marital Status", list(marital_status_map.keys()))
-application_mode = st.sidebar.selectbox("Application Mode", list(application_mode_map.keys()))
-application_order = st.sidebar.slider("Application Order (0 = 1st choice)", 0, 9, 0)
-course = st.sidebar.selectbox("Course", list(course_map.keys()))
-attendance = st.sidebar.radio("Class Attendance", list(attendance_map.keys()))
-prev_qualification = st.sidebar.slider("Previous Qualification (Code)", 0, 100, 1)
-prev_grade = st.sidebar.slider("Previous Qualification Grade", 0, 200, 150)
-nacionality = st.sidebar.slider("Nationality (Code)", 1, 250, 1)
-mother_edu = st.sidebar.slider("Mother's Qualification (Code)", 0, 100, 1)
-father_edu = st.sidebar.slider("Father's Qualification (Code)", 0, 100, 1)
-mother_job = st.sidebar.slider("Mother's Occupation (Code)", 0, 100, 1)
-father_job = st.sidebar.slider("Father's Occupation (Code)", 0, 100, 1)
-admission_grade = st.sidebar.slider("Admission Grade", 0, 200, 150)
-displaced = st.sidebar.radio("Is the student displaced?", list(boolean_map.keys()))
-special_needs = st.sidebar.radio("Educational Special Needs?", list(boolean_map.keys()))
-debtor = st.sidebar.radio("Is the student a debtor?", list(boolean_map.keys()))
-fees_up_to_date = st.sidebar.radio("Tuition Fees Up To Date?", list(boolean_map.keys()))
-gender = st.sidebar.radio("Gender", list(gender_map.keys()))
-scholarship = st.sidebar.radio("Scholarship Holder?", list(boolean_map.keys()))
-age = st.sidebar.slider("Age at Enrollment", 16, 70, 20)
-international = st.sidebar.radio("International Student?", list(boolean_map.keys()))
+# --- Input Fields (Ordered as expected by the model) ---
+# Use columns for better layout if needed
+col1, col2 = st.columns(2)
 
-# 1st Sem
-cred_1st = st.sidebar.slider("1st Sem: Credited Units", 0, 10, 0)
-enr_1st = st.sidebar.slider("1st Sem: Enrolled Units", 0, 10, 5)
-eval_1st = st.sidebar.slider("1st Sem: Evaluated Units", 0, 10, 5)
-appr_1st = st.sidebar.slider("1st Sem: Approved Units", 0, 10, 4)
-grade_1st = st.sidebar.slider("1st Sem: Average Grade", 0, 20, 14)
-no_eval_1st = st.sidebar.slider("1st Sem: Units Without Evaluation", 0, 10, 0)
+with col1:
+    st.subheader("Demographics & Background")
+    marital_status = st.sidebar.selectbox("Marital Status", list(marital_status_map.keys()))
+    nacionality_desc = st.sidebar.selectbox("Nationality", list(nationality_map.keys()), index=0) # Default to Portuguese
+    gender = st.sidebar.radio("Gender", list(gender_map.keys()))
+    age = st.sidebar.slider("Age at Enrollment", 17, 70, 20) # Adjusted min age slightly based on typical enrollment
+    displaced = st.sidebar.radio("Is the student displaced?", list(boolean_map.keys()), index=1) # Default No
+    special_needs = st.sidebar.radio("Educational Special Needs?", list(boolean_map.keys()), index=1) # Default No
+    international = st.sidebar.radio("International Student?", list(boolean_map.keys()), index=1) # Default No
 
-# 2nd Sem
-cred_2nd = st.sidebar.slider("2nd Sem: Credited Units", 0, 10, 0)
-enr_2nd = st.sidebar.slider("2nd Sem: Enrolled Units", 0, 10, 5)
-eval_2nd = st.sidebar.slider("2nd Sem: Evaluated Units", 0, 10, 5)
-appr_2nd = st.sidebar.slider("2nd Sem: Approved Units", 0, 10, 4)
-grade_2nd = st.sidebar.slider("2nd Sem: Average Grade", 0, 20, 14)
-no_eval_2nd = st.sidebar.slider("2nd Sem: Units Without Evaluation", 0, 10, 0)
+    st.subheader("Application Details")
+    application_mode = st.sidebar.selectbox("Application Mode", list(application_mode_map.keys()))
+    application_order = st.sidebar.slider("Application Order (0 = 1st choice)", 0, 9, 0)
+    course = st.sidebar.selectbox("Course", list(course_map.keys()))
+    attendance = st.sidebar.radio("Class Attendance", list(attendance_map.keys()))
+    admission_grade = st.sidebar.slider("Admission Grade", 0, 200, 140) # Adjusted default slightly
 
-# Economic context
-unemployment_rate = st.sidebar.slider("Unemployment Rate (%)", 0.0, 20.0, 7.0)
-inflation_rate = st.sidebar.slider("Inflation Rate (%)", 0.0, 10.0, 2.0)
-gdp = st.sidebar.slider("GDP Growth Rate (%)", -10.0, 10.0, 1.5)
+    st.subheader("Previous Education")
+    prev_qualification_desc = st.sidebar.selectbox("Previous Qualification", list(prev_qual_map.keys()), index=0) # Default Secondary
+    prev_grade = st.sidebar.slider("Previous Qualification Grade", 0, 200, 140) # Adjusted default slightly
 
-# Arrange inputs in the correct order
-input_data = np.array([[
+with col2:
+    st.subheader("Parental Information")
+    mother_qual_desc = st.sidebar.selectbox("Mother's Qualification", list(parent_qual_map.keys()), index=0)
+    father_qual_desc = st.sidebar.selectbox("Father's Qualification", list(parent_qual_map.keys()), index=0)
+    mother_job_desc = st.sidebar.selectbox("Mother's Occupation", list(parent_job_map.keys()), index=11) # Default to (blank) or common category
+    father_job_desc = st.sidebar.selectbox("Father's Occupation", list(parent_job_map.keys()), index=11) # Default to (blank) or common category
+
+    st.subheader("Financial Status")
+    debtor = st.sidebar.radio("Is the student a debtor?", list(boolean_map.keys()), index=1) # Default No
+    fees_up_to_date = st.sidebar.radio("Tuition Fees Up To Date?", list(boolean_map.keys()), index=0) # Default Yes
+    scholarship = st.sidebar.radio("Scholarship Holder?", list(boolean_map.keys()), index=1) # Default No
+
+    st.subheader("Academic Performance (1st Semester)")
+    cred_1st = st.sidebar.slider("1st Sem: Credited Units", 0, 30, 0) # Increased range
+    enr_1st = st.sidebar.slider("1st Sem: Enrolled Units", 0, 30, 6)   # Increased range/default
+    eval_1st = st.sidebar.slider("1st Sem: Evaluated Units", 0, 30, 6) # Increased range/default
+    appr_1st = st.sidebar.slider("1st Sem: Approved Units", 0, 30, 5)  # Increased range/default
+    grade_1st = st.sidebar.slider("1st Sem: Average Grade", 0.0, 20.0, 12.0, step=0.1) # Added based on description
+    # Note: 'without evaluation' was in original code but not description table - keeping it for model compatibility
+    no_eval_1st = st.sidebar.slider("1st Sem: Units Without Evaluation", 0, 30, 0) # Increased range
+
+    st.subheader("Academic Performance (2nd Semester)")
+    # Note: 2nd Sem fields were in original code but not description table - keeping them for model compatibility
+    cred_2nd = st.sidebar.slider("2nd Sem: Credited Units", 0, 30, 0) # Increased range
+    enr_2nd = st.sidebar.slider("2nd Sem: Enrolled Units", 0, 30, 6)   # Increased range/default
+    eval_2nd = st.sidebar.slider("2nd Sem: Evaluated Units", 0, 30, 6) # Increased range/default
+    appr_2nd = st.sidebar.slider("2nd Sem: Approved Units", 0, 30, 5)  # Increased range/default
+    grade_2nd = st.sidebar.slider("2nd Sem: Average Grade", 0.0, 20.0, 12.0, step=0.1)
+    no_eval_2nd = st.sidebar.slider("2nd Sem: Units Without Evaluation", 0, 30, 0) # Increased range
+
+    st.subheader("Economic Context (Optional)")
+    # Note: Economic fields were in original code but not description table - keeping them for model compatibility
+    unemployment_rate = st.sidebar.slider("Unemployment Rate (%)", 0.0, 20.0, 10.0, step=0.1)
+    inflation_rate = st.sidebar.slider("Inflation Rate (%)", -5.0, 10.0, 1.5, step=0.1)
+    gdp = st.sidebar.slider("GDP Growth Rate (%)", -10.0, 10.0, 0.5, step=0.1)
+
+
+# --- Data Preparation and Prediction ---
+
+# Map selected descriptions back to codes
+nationality_code = nationality_map[nacionality_desc]
+prev_qualification_code = prev_qual_map[prev_qualification_desc]
+mother_qual_code = parent_qual_map[mother_qual_desc]
+father_qual_code = parent_qual_map[father_qual_desc]
+mother_job_code = parent_job_map[mother_job_desc]
+father_job_code = parent_job_map[father_job_desc]
+
+
+# Arrange inputs in the correct order expected by the model
+# IMPORTANT: Verify this order matches exactly how the model was trained!
+# This order is based on the original script structure and added 'grade_1st'.
+input_data_list = [
     marital_status_map[marital_status],
     application_mode_map[application_mode],
     application_order,
     course_map[course],
     attendance_map[attendance],
-    prev_qualification,
+    prev_qualification_code, # Mapped value
     prev_grade,
-    nacionality,
-    mother_edu,
-    father_edu,
-    mother_job,
-    father_job,
+    nationality_code,        # Mapped value
+    mother_qual_code,        # Mapped value
+    father_qual_code,        # Mapped value
+    mother_job_code,         # Mapped value
+    father_job_code,         # Mapped value
     admission_grade,
     boolean_map[displaced],
     boolean_map[special_needs],
@@ -100,27 +307,71 @@ input_data = np.array([[
     enr_1st,
     eval_1st,
     appr_1st,
-    grade_1st,
-    no_eval_1st,
-    cred_2nd,
-    enr_2nd,
-    eval_2nd,
-    appr_2nd,
-    grade_2nd,
-    no_eval_2nd,
-    unemployment_rate,
-    inflation_rate,
-    gdp
-]])
+    grade_1st,               # Added grade_1st
+    no_eval_1st,             # Kept from original code
+    cred_2nd,                # Kept from original code
+    enr_2nd,                 # Kept from original code
+    eval_2nd,                # Kept from original code
+    appr_2nd,                # Kept from original code
+    grade_2nd,               # Kept from original code
+    no_eval_2nd,             # Kept from original code
+    unemployment_rate,       # Kept from original code
+    inflation_rate,          # Kept from original code
+    gdp                      # Kept from original code
+]
+
+# Convert to NumPy array with the correct shape (1 row, N columns)
+input_data = np.array([input_data_list])
+
 
 # Mapping prediction output to label
 prediction_map = {
     0: "❌ The student is predicted to **DROP OUT**.",
-    1: "📚 The student is predicted to **STAY ENROLLED**.",
-    2: "🎓 The student is predicted to **GRADUATE**."
+    1: "📚 The student is predicted to **STAY ENROLLED**.", # Check if 'Enrolled' or 'Graduate' is 1
+    2: "🎓 The student is predicted to **GRADUATE**."      # Check if 'Enrolled' or 'Graduate' is 2
 }
+# IMPORTANT: Verify the numeric codes (0, 1, 2) match the actual labels ('Dropout', 'Enrolled', 'Graduate') used during model training. Adjust prediction_map if necessary.
 
-if st.button("Predict Dropout Status"):
-    prediction = model.predict(input_data)[0]
-    st.subheader("Prediction Result")
-    st.info(prediction_map[int(prediction)])
+
+st.divider() # Add a visual separator
+
+if st.button("Predict Student Outcome", type="primary", use_container_width=True):
+    try:
+        # Ensure input data is float or compatible type for the model
+        input_data_float = input_data.astype(float)
+
+        prediction = model.predict(input_data_float)[0]
+        prediction_proba = model.predict_proba(input_data_float)[0] # Get probabilities
+
+        prediction_label = prediction_map.get(int(prediction), "Unknown Prediction") # Handle potential unexpected prediction values
+
+        st.subheader("Prediction Result")
+        st.info(prediction_label)
+
+        st.subheader("Prediction Probabilities")
+        # Create a dataframe for better display of probabilities
+        proba_df = pd.DataFrame({
+            'Outcome': [prediction_map.get(i, f"Class {i}") for i in model.classes_],
+            'Probability': prediction_proba
+        })
+        st.dataframe(proba_df.style.format({'Probability': "{:.2%}"})) # Format as percentage
+
+        # Optional: Display input data for verification
+        # st.subheader("Input Data Summary")
+        # st.json(dict(zip(feature_names_in_order, input_data_list))) # Requires defining feature_names_in_order
+
+    except AttributeError:
+         st.error("The loaded model doesn't seem to have a 'predict_proba' method. Displaying prediction only.")
+         prediction = model.predict(input_data_float)[0]
+         prediction_label = prediction_map.get(int(prediction), "Unknown Prediction")
+         st.subheader("Prediction Result")
+         st.info(prediction_label)
+    except ValueError as ve:
+        st.error(f"Prediction Error: Check input data types. Details: {ve}")
+        st.error(f"Input data sample: {input_data_float[0][:10]}...") # Show first few features of input
+    except Exception as e:
+        st.error(f"An unexpected error occurred during prediction: {e}")
+        st.error(f"Input data shape: {input_data.shape}")
+
+st.sidebar.markdown("---")
+st.sidebar.info("Model: Random Forest Classifier")
