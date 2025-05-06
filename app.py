@@ -337,3 +337,4 @@ if st.button("Predict Student Outcome", type="primary", use_container_width=True
         st.error(f"Input data shape: {input_data.shape}")
 
 st.sidebar.markdown("---")
+st.sidebar.markdown("© 2025 Mohammad Aris Darmawan")
